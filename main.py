@@ -1,9 +1,9 @@
 import pygame as p
-import engine
+from engine import GameState, Move
 
 WIDTH = HEIGHT = 512
 DIMENSION = 8 # Chess board is 8x8
-SQ_SIZE = HEIGHT
+SQ_SIZE = HEIGHT // DIMENSION
 MAX_FPS = 15 # For animations later on
 IMAGES = {}
 
@@ -17,19 +17,18 @@ def main():
     screen = p.display.set_mode((WIDTH, HEIGHT))
     clock = p.time.Clock()
     screen.fill(p.Color("white"))
-    gs = engine.GameState()
+    gs = GameState()
     loadImages()
     running = True
-    sqSelected = () # No square is selected, keep track of the last click of the user (tuple: (row, col))
+    sqSelected = () # tuple: (row, col)
     playerClicks = [] # Keep track of player clicks (two tuples: [(6, 4), (4, 4)])
     while running:
         for e in p.event.get():
             if e.type == p.QUIT:
                 running = False
             elif e.type == p.MOUSEBUTTONDOWN:
-                location = p.mouse.get_pos() # (x, y) location of the mouse
-                col = location[0]//SQ_SIZE
-                row = location[1]//SQ_SIZE
+                location = p.mouse.get_pos() # location of the mouse (x, y)
+                col, row = (location[0] // SQ_SIZE), (location[1] // SQ_SIZE)
                 if sqSelected == (row, col): # The user clicked the same square twice
                     sqSelected = () # Deselect
                     playerClicks = [] # Clear player clicks
@@ -37,7 +36,7 @@ def main():
                     sqSelected = (row, col)
                     playerClicks.append(sqSelected) # Append for both 1st and 2nd clicks
                 if len(playerClicks) == 2: # After the 2nd click
-                    move = engine.Move(playerClicks[0], playerClicks[1], gs.board)
+                    move = Move(playerClicks[0], playerClicks[1], gs.board)
                     gs.makeMove(move)
                     sqSelected = () # Reset user clicks
                     playerClicks = []
