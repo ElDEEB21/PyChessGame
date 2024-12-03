@@ -1,4 +1,5 @@
 class GameState():
+    
     def __init__(self):
         # Board is an 8x8 2D List, each element of the list has 2 characters.
         # The first character represents the color of the piece (b/w)
@@ -24,6 +25,57 @@ class GameState():
         self.moveLog.append(move)
         self.whiteToMove = not self.whiteToMove
         
+    def undoMove(self):
+        if len(self.moveLog) != 0:
+            move = self.moveLog.pop()
+            self.board[move.startRow][move.startCol] = move.pieceMoved
+            self.board[move.endRow][move.endCol] = move.pieceCaptured
+            self.whiteToMove = not self.whiteToMove
+            
+    def getValidMoves(self):
+        return self.getAllPossibleMoves()
+    
+    def getAllPossibleMoves(self):
+        moves = [Move((6, 4), (4, 4), self.board)]
+        for r in range(len(self.board)):
+            for c in range(len(self.board[r])):
+                turn = self.board[r][c][0]
+                piece = self.board[r][c][1]
+                if (self.whiteToMove and turn == "w") or (not self.whiteToMove and turn == "b"):
+                    if piece == "p":
+                        self.getPawnMoves(r, c, moves)
+                    elif piece == "R":
+                        self.getRookMoves(r, c, moves)
+                    elif piece == "N":
+                        self.getKnightMoves(r, c, moves)
+                    elif piece == "B":
+                        self.getBishopMoves(r, c, moves)
+                    elif piece == "Q":
+                        self.getQueenMoves(r, c, moves)
+                    elif piece == "K":
+                        self.getKingMoves(r, c, moves)
+        return moves
+    
+    def getPawnMoves(self, r, c, moves):
+        pass
+    
+    def getRookMoves(self, r, c, moves):
+        pass
+    
+    def getKnightMoves(self, r, c, moves):
+        pass
+    
+    def getBishopMoves(self, r, c, moves):
+        pass
+    
+    def getQueenMoves(self, r, c, moves):
+        pass
+
+    def getKingMoves(self, r, c, moves):
+        pass
+    
+    
+        
 class Move():
     # Maps keys to values
     # key : value
@@ -40,6 +92,11 @@ class Move():
         self.endCol = endSq[1]
         self.pieceMoved = board[self.startRow][self.startCol]
         self.pieceCaptured = board[self.endRow][self.endCol]
+        self.moveID = self.startRow * 1000 + self.startCol * 100 + self.endRow * 10 + self.endCol
+        
+    def __eq__(self, other):
+        if isinstance(other, Move):
+            return self.moveID == other.moveID
         
     def getRankFile(self, r, c):
         return self.colsToFiles[c] + self.rowsToRanks[r]

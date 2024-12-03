@@ -18,6 +18,8 @@ def main():
     clock = p.time.Clock()
     screen.fill(p.Color("white"))
     gs = GameState()
+    validMoves = gs.getValidMoves()
+    moveMade = False
     loadImages()
     running = True
     sqSelected = () # tuple: (row, col)
@@ -37,9 +39,21 @@ def main():
                     playerClicks.append(sqSelected) # Append for both 1st and 2nd clicks
                 if len(playerClicks) == 2: # After the 2nd click
                     move = Move(playerClicks[0], playerClicks[1], gs.board)
-                    gs.makeMove(move)
+                    print(move.getChessNotation())
+                    if move in validMoves: 
+                        gs.makeMove(move)
+                        moveMade = True
                     sqSelected = () # Reset user clicks
                     playerClicks = []
+            elif e.type == p.KEYDOWN:
+                if e.key == p.K_z:
+                    gs.undoMove()
+                    moveMade = True
+                    
+        if moveMade:
+            validMoves = gs.getValidMoves()
+            moveMade = False
+                
         drawGameState(screen, gs)
         clock.tick(MAX_FPS)
         p.display.flip()
