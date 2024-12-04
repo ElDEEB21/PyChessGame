@@ -1,6 +1,6 @@
 import pygame as p
-from engine import GameState, Move
-
+from engine import GameState
+from moves import MoveGenerator, Move
 WIDTH = HEIGHT = 512
 DIMENSION = 8 # Chess board is 8x8
 SQ_SIZE = HEIGHT // DIMENSION
