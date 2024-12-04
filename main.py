@@ -1,6 +1,7 @@
 import pygame as p
 from engine import GameState
 from moves import MoveGenerator, Move
+
 WIDTH = HEIGHT = 512
 DIMENSION = 8 # Chess board is 8x8
 SQ_SIZE = HEIGHT // DIMENSION
@@ -14,6 +15,7 @@ def loadImages():
 
 def main():
     p.init()
+    p.display.set_caption("Chess Game")
     screen = p.display.set_mode((WIDTH, HEIGHT))
     clock = p.time.Clock()
     screen.fill(p.Color("white"))
@@ -56,16 +58,20 @@ def main():
             validMoves = gs.getValidMoves()
             moveMade = False
                 
-        drawGameState(screen, gs)
+        drawGameState(screen, gs, sqSelected)
         clock.tick(MAX_FPS)
         p.display.flip()
 
-def drawBoard(screen):
+def drawBoard(screen, sqSelected):
     colors = [p.Color("white"), p.Color("lightblue")]
+    selectedColor = p.Color("yellow")  # Color for the selected square
     for r in range(DIMENSION):
         for c in range(DIMENSION):
-            color = colors[((r+c) % 2)]
-            p.draw.rect(screen, color, p.Rect(c*SQ_SIZE, r*SQ_SIZE, SQ_SIZE, SQ_SIZE))
+            if sqSelected == (r, c):  # Check if this square is selected
+                color = selectedColor
+            else:
+                color = colors[((r + c) % 2)]
+            p.draw.rect(screen, color, p.Rect(c * SQ_SIZE, r * SQ_SIZE, SQ_SIZE, SQ_SIZE))
 
 def drawPieces(screen, board):
     for r in range(DIMENSION):
@@ -74,8 +80,8 @@ def drawPieces(screen, board):
             if piece != "--":
                 screen.blit(IMAGES[piece], p.Rect(c*SQ_SIZE, r*SQ_SIZE, SQ_SIZE, SQ_SIZE))
                 
-def drawGameState(screen, gs):
-    drawBoard(screen) 
+def drawGameState(screen, gs, sqSelected):
+    drawBoard(screen, sqSelected)  # Pass the selected square to the drawBoard function
     drawPieces(screen, gs.board)
 
 
