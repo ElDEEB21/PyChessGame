@@ -1,6 +1,7 @@
 from moves import MoveGenerator, Move
 
 class GameState(MoveGenerator):
+    
     def __init__(self):
         super().__init__()
         self.board = [
@@ -11,8 +12,8 @@ class GameState(MoveGenerator):
             ["--", "--", "--", "--", "--", "--", "--", "--"],
             ["--", "--", "--", "--", "--", "--", "--", "--"],
             ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
-            ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
-        ]
+            ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]]
+        
         self.moveFunctions = {"p": self.getPawnMoves, "R": self.getRookMoves, "N": self.getKnightMoves,
                               "B": self.getBishopMoves, "Q": self.getQueenMoves, "K": self.getKingMoves}
         self.whiteToMove = True
@@ -21,6 +22,7 @@ class GameState(MoveGenerator):
         self.inCheck = False
         self.checkmate, self.stalemate = False, False
         self.pins, self.checks = [], []
+        self.enpassantPossible = ()  # Coordinates for the square where en passant capture is possible
 
     def makeMove(self, move):
         self.board[move.startRow][move.startCol] = "--"
@@ -31,6 +33,18 @@ class GameState(MoveGenerator):
             self.whiteKingLocation = (move.endRow, move.endCol)
         elif move.pieceMoved == "bK":
             self.blackKingLocation = (move.endRow, move.endCol)
+        
+        if move.isPawnPromotion:
+            self.board[move.endRow][move.endCol] = move.pieceMoved[0] + 'Q'
+            
+        if move.isEnpassantMove:
+            self.board[move.startRow][move.endCol] = "--" # Capturing the pawn
+        
+        # Update enpassantPossible variable
+        if move.pieceMoved[1] == 'p' and abs(move.startRow - move.endRow) == 2:# Only on 2 square pawn advance
+            self.enpassantPossible = ((move.startRow + move.endRow) // 2, move.startCol)
+        else:
+            self.enpassantPossible = ()
 
     def undoMove(self):
         if len(self.moveLog) != 0:
@@ -42,8 +56,17 @@ class GameState(MoveGenerator):
                 self.whiteKingLocation = (move.startRow, move.startCol)
             elif move.pieceMoved == "bK":
                 self.blackKingLocation = (move.startRow, move.startCol)
+            # Undo enpassant move
+            if move.isEnpassantMove:
+                self.board[move.endRow][move.endCol] = "--" # Leave landing square blank
+                self.board[move.startRow][move.endCol] = move.pieceCaptured
+                self.enpassantPossible = (move.endRow, move.endCol)
+            # Undo 2 square pawn advance
+            if move.pieceMoved[1] == 'p' and abs(move.startRow - move.endRow) == 2:
+                self.enpassantPossible = ()
 
     def getValidMoves(self):
+        tempEnpassantPossible = self.enpassantPossible
         """Gets all moves considering checks"""
         valid_moves = []
         self.inCheck, self.pins, self.checks = self.checkForPinsAndChecks()
@@ -79,14 +102,11 @@ class GameState(MoveGenerator):
             valid_moves = self.getAllPossibleMoves()
 
         if len(valid_moves) == 0:  # Either checkmate or stalemate
-            if self.inCheck:
-                self.checkmate = True
-            else:
-                self.stalemate = True
+            self.checkmate, self.stalemate = self.inCheck, not self.inCheck
         else:
-            self.checkmate = False
-            self.stalemate = False
-
+            self.checkmate, self.stalemate = False, False
+        
+        self.enpassantPossible = tempEnpassantPossible
         return valid_moves
 
     def getAllPossibleMoves(self):
@@ -132,7 +152,7 @@ class GameState(MoveGenerator):
                     elif endPiece[0] == opponent:
                         pieceType = endPiece[1]
                         if (0 <= j <= 3 and pieceType == 'R') or (4 <= j <= 7 and pieceType == 'B') or \
-                                (i == 1 and pieceType == 'P' and ((opponent == 'w' and 6 <= j <= 7)
+                                (i == 1 and pieceType == 'p' and ((opponent == 'w' and 6 <= j <= 7)
                                                                    or (opponent == 'b' and 4 <= j <= 5))) or \
                                 (pieceType == 'Q') or (i == 1 and pieceType == 'K'):
                             if possiblePin == ():  # no piece blocking, so check
