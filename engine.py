@@ -18,7 +18,9 @@ class GameState(MoveGenerator):
         self.whiteToMove = True
         self.moveLog = []
         self.whiteKingLocation , self.blackKingLocation = (7, 4), (0, 4)
-        self.checkMate, self.staleMate = False, False
+        self.inCheck = False
+        self.checkmate, self.stalemate = False, False
+        self.pins, self.checks = [], []
 
     def makeMove(self, move):
         self.board[move.startRow][move.startCol] = "--"
@@ -42,48 +44,118 @@ class GameState(MoveGenerator):
                 self.blackKingLocation = (move.startRow, move.startCol)
 
     def getValidMoves(self):
-        # 1. Generate all possible moves
-        moves = self.getAllPossibleMoves()
-        # 2. For each move, make the move
-        for i in range(len(moves) - 1, -1, -1):
-            self.makeMove(moves[i])
-            # 3. Generate all possible moves for the other color
-            # 4. For each move, see if the king is under attack
-            # 5. If the king is under attack, not a valid move
-            self.whiteToMove = not self.whiteToMove
-            if self.inCheck():
-                moves.remove(moves[i])
-            self.whiteToMove = not self.whiteToMove
-            self.undoMove()
-        if len(moves) == 0:# Either checkmate or stalemate
-            if self.inCheck():
-                self.checkMate = True
-            else:
-                self.staleMate = True
-        else:
-            self.checkMate , self.staleMate = False, False
+        """Gets all moves considering checks"""
+        valid_moves = []
+        self.inCheck, self.pins, self.checks = self.checkForPinsAndChecks()
 
-    def inCheck(self):
+        # Updates king locations
         if self.whiteToMove:
-            return self.squareUnderAttack(self.whiteKingLocation[0], self.whiteKingLocation[1])
+            king_row, king_column = self.whiteKingLocation[0], self.whiteKingLocation[1]
         else:
-            return self.squareUnderAttack(self.blackKingLocation[0], self.blackKingLocation[1])
-    
-    def squareUnderAttack(self, r, c):
-        self.whiteToMove = not self.whiteToMove
-        opponentMoves = self.getAllPossibleMoves()
-        self.whiteToMove = not self.whiteToMove
-        for move in opponentMoves:
-            if move.endRow == r and move.endCol == c: # Square is under attack
-                return True
-        return False
-    
+            king_row, king_column = self.blackKingLocation[0], self.blackKingLocation[1]
+
+        if self.inCheck:
+            if len(self.checks) == 1:  # Only 1 check: block check or move king
+                valid_moves = self.getAllPossibleMoves()
+                check = self.checks[0]
+                check_row, check_column = check[0], check[1]
+                piece_checking = self.board[check_row][check_column]  # Enemy piece causing check
+                valid_squares = []
+                if piece_checking[1] == 'N':
+                    valid_squares = [(check_row, check_column)]
+                else:
+                    for i in range(1, len(self.board)):
+                        valid_square = (king_row + check[2] * i, king_column + check[3] * i)  # 2 & 3 = check directions
+                        valid_squares.append(valid_square)
+                        if valid_square[0] == check_row and valid_square[1] == check_column:
+                            break
+                for i in range(len(valid_moves) - 1, -1, -1):  # Gets rid of move not blocking, checking, or moving king
+                    if valid_moves[i].pieceMoved[1] != 'K':
+                        if not (valid_moves[i].endRow, valid_moves[i].endCol) in valid_squares:
+                            valid_moves.remove(valid_moves[i])
+            else:  # Double check, king must move
+                self.getKingMoves(king_row, king_column, valid_moves, self.board, self.whiteToMove)
+        else:  # Not in check
+            valid_moves = self.getAllPossibleMoves()
+
+        if len(valid_moves) == 0:  # Either checkmate or stalemate
+            if self.inCheck:
+                self.checkmate = True
+            else:
+                self.stalemate = True
+        else:
+            self.checkmate = False
+            self.stalemate = False
+
+        return valid_moves
+
     def getAllPossibleMoves(self):
+        """Gets all moves without considering checks"""
         moves = []
-        for r in range(len(self.board)):
-            for c in range(len(self.board[r])):
-                turn = self.board[r][c][0]
-                piece = self.board[r][c][1]
-                if (self.whiteToMove and turn == "w") or (not self.whiteToMove and turn == "b"):
-                    self.moveFunctions[piece](r, c, moves, self.board, self.whiteToMove)
+        for row in range(len(self.board)):  # Number of rows
+            for column in range(len(self.board[row])):  # Number of columns in each row
+                turn = self.board[row][column][0]
+                if (turn == 'w' and self.whiteToMove) or (turn == 'b' and not self.whiteToMove):
+                    piece = self.board[row][column][1]
+                    self.moveFunctions[piece](row, column, moves, self.board, self.whiteToMove)  # Calls move function based on piece type
         return moves
+    
+    def checkForPinsAndChecks(self):
+        """Returns if the player is in check, a list of pins, and a list of checks"""
+        pins = []
+        checks = []
+        inCheck = False
+
+        if self.whiteToMove:
+            opponent = 'b'
+            ally = 'w'
+            startRow, startCol = self.whiteKingLocation
+        else:
+            opponent = 'w'
+            ally = 'b'
+            startRow, startCol = self.blackKingLocation
+
+        directions = ((-1, 0), (0, -1), (1, 0), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1))
+        for j in range(len(directions)):
+            d = directions[j]
+            possiblePin = ()  # Resets possible pins
+            for i in range(1, len(self.board)):
+                endRow = startRow + d[0] * i
+                endCol = startCol + d[1] * i
+                if 0 <= endRow < len(self.board) and 0 <= endCol < len(self.board):
+                    endPiece = self.board[endRow][endCol]
+                    if endPiece[0] == ally and endPiece[1] != 'K':
+                        if possiblePin == ():  # 1st ally piece can be pinned
+                            possiblePin = (endRow, endCol, d[0], d[1])
+                        else:  # 2nd ally piece, so no pin or check possible
+                            break
+                    elif endPiece[0] == opponent:
+                        pieceType = endPiece[1]
+                        if (0 <= j <= 3 and pieceType == 'R') or (4 <= j <= 7 and pieceType == 'B') or \
+                                (i == 1 and pieceType == 'P' and ((opponent == 'w' and 6 <= j <= 7)
+                                                                   or (opponent == 'b' and 4 <= j <= 5))) or \
+                                (pieceType == 'Q') or (i == 1 and pieceType == 'K'):
+                            if possiblePin == ():  # no piece blocking, so check
+                                inCheck = True
+                                checks.append((endRow, endCol, d[0], d[1]))
+                                break
+                            else:  # Piece blocking, so pin
+                                pins.append(possiblePin)
+                                break
+                        else:  # Enemy piece but not applying check
+                            break
+                else:  # Off board
+                    break
+
+        knightMoves = ((-2, -1), (-2, 1), (-1, -2), (-1, 2), (1, -2), (1, 2), (2, -1), (2, 1))
+        for move in knightMoves:
+            endRow = startRow + move[0]
+            endCol = startCol + move[1]
+            if 0 <= endRow < len(self.board) and 0 <= endCol < len(self.board):
+                endPiece = self.board[endRow][endCol]
+                if endPiece[0] == opponent and endPiece[1] == 'N':
+                    inCheck = True
+                    checks.append((endRow, endCol, move[0], move[1]))
+
+        return inCheck, pins, checks
+    
