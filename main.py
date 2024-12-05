@@ -3,6 +3,7 @@ from engine import GameState
 from moves import MoveGenerator, Move
 
 WIDTH = HEIGHT = 512
+SIDEBAR_WIDTH = 200
 DIMENSION = 8 # Chess board is 8x8
 SQ_SIZE = HEIGHT // DIMENSION
 MAX_FPS = 15 # For animations later on
@@ -16,7 +17,7 @@ def loadImages():
 def main():
     p.init()
     p.display.set_caption("Chess Game")
-    screen = p.display.set_mode((WIDTH, HEIGHT))
+    screen = p.display.set_mode((WIDTH + SIDEBAR_WIDTH, HEIGHT))
     clock = p.time.Clock()
     screen.fill(p.Color("white"))
     gs = GameState()
@@ -27,33 +28,38 @@ def main():
     sqSelected = () # tuple: (row, col)
     playerClicks = [] # Keep track of player clicks (two tuples: [(6, 4), (4, 4)])
     selectedPieceMoves = [] # Store valid moves for the selected piece
+    capturedPieces = {"w": [], "b": []} # Store captured pieces
+
     while running:
         for e in p.event.get():
             if e.type == p.QUIT:
                 running = False
             elif e.type == p.MOUSEBUTTONDOWN:
                 location = p.mouse.get_pos() # location of the mouse (x, y)
-                col, row = (location[0] // SQ_SIZE), (location[1] // SQ_SIZE)
-                if sqSelected == (row, col): # The user clicked the same square twice
-                    sqSelected = () # Deselect
-                    playerClicks = [] # Clear player clicks
-                    selectedPieceMoves = [] # Clear valid moves for the selected piece
-                else:
-                    sqSelected = (row, col)
-                    playerClicks.append(sqSelected) # Append for both 1st and 2nd clicks
-                    selectedPieceMoves = [move for move in validMoves if move.startRow == row and move.startCol == col]
-                if len(playerClicks) == 2: # After the 2nd click
-                    move = Move(playerClicks[0], playerClicks[1], gs.board)
-                    print(move.getChessNotation())
-                    for i in range(len(validMoves)):
-                        if move == validMoves[i]: 
-                            gs.makeMove(validMoves[i])
-                            moveMade = True
-                            sqSelected = () # Reset user clicks
-                            playerClicks = []
-                            selectedPieceMoves = [] # Clear valid moves for the selected piece
-                    if not moveMade:
-                        playerClicks = [sqSelected]
+                if location[0] < WIDTH: # Click on the board
+                    col, row = (location[0] // SQ_SIZE), (location[1] // SQ_SIZE)
+                    if sqSelected == (row, col): # The user clicked the same square twice
+                        sqSelected = () # Deselect
+                        playerClicks = [] # Clear player clicks
+                        selectedPieceMoves = [] # Clear valid moves for the selected piece
+                    else:
+                        sqSelected = (row, col)
+                        playerClicks.append(sqSelected) # Append for both 1st and 2nd clicks
+                        selectedPieceMoves = [move for move in validMoves if move.startRow == row and move.startCol == col]
+                    if len(playerClicks) == 2: # After the 2nd click
+                        move = Move(playerClicks[0], playerClicks[1], gs.board)
+                        print(move.getChessNotation())
+                        for i in range(len(validMoves)):
+                            if move == validMoves[i]: 
+                                gs.makeMove(validMoves[i])
+                                moveMade = True
+                                sqSelected = () # Reset user clicks
+                                playerClicks = []
+                                selectedPieceMoves = [] # Clear valid moves for the selected piece
+                                if move.pieceCaptured != "--":
+                                    capturedPieces[move.pieceCaptured[0]].append(move.pieceCaptured)
+                        if not moveMade:
+                            playerClicks = [sqSelected]
             elif e.type == p.KEYDOWN:
                 if e.key == p.K_z:
                     gs.undoMove()
@@ -63,7 +69,7 @@ def main():
             validMoves = gs.getValidMoves()
             moveMade = False
                 
-        drawGameState(screen, gs, sqSelected, selectedPieceMoves)
+        drawGameState(screen, gs, sqSelected, selectedPieceMoves, capturedPieces)
         
         if gs.checkmate:
             showEndGameMessage(screen, "Checkmate")
@@ -116,10 +122,37 @@ def drawPieces(screen, board):
             piece = board[r][c]
             if piece != "--":
                 screen.blit(IMAGES[piece], p.Rect(c*SQ_SIZE, r*SQ_SIZE, SQ_SIZE, SQ_SIZE))
-                
-def drawGameState(screen, gs, sqSelected, selectedPieceMoves):
+
+def drawSidebar(screen, gs, capturedPieces):
+    # Draw the sidebar background
+    sidebarRect = p.Rect(WIDTH, 0, SIDEBAR_WIDTH, HEIGHT)
+    p.draw.rect(screen, p.Color("gray"), sidebarRect)
+    
+    # Set up font
+    font = p.font.SysFont("Helvetica", 24, True, False)
+    
+    # Display whose turn it is using color
+    turnColor = p.Color("white") if gs.whiteToMove else p.Color("black")
+    turnRect = p.Rect(WIDTH + 10, 10, 30, 30)
+    p.draw.rect(screen, turnColor, turnRect)
+    
+    # Display captured pieces
+    yOffset = 60
+    pieceSize = SQ_SIZE // 2  # Smaller size for captured pieces
+    for color, pieces in capturedPieces.items():
+        colorText = "White captured:" if color == "w" else "Black captured:"
+        colorObject = font.render(colorText, 0, p.Color("Black"))
+        screen.blit(colorObject, (WIDTH + 10, yOffset))
+        yOffset += 30
+        for piece in pieces:
+            pieceImage = p.transform.scale(IMAGES[piece], (pieceSize, pieceSize))
+            screen.blit(pieceImage, (WIDTH + 10, yOffset))
+            yOffset += pieceSize + 5  # Add some space between pieces
+
+def drawGameState(screen, gs, sqSelected, selectedPieceMoves, capturedPieces):
     drawBoard(screen, gs, sqSelected, selectedPieceMoves)  # Pass the selected square and valid moves to the drawBoard function
     drawPieces(screen, gs.board)
+    drawSidebar(screen, gs, capturedPieces)
 
 def showEndGameMessage(screen, message):
     font = p.font.SysFont("Helvetica", 32, True, False)

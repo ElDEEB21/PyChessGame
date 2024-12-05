@@ -165,7 +165,29 @@ class MoveGenerator:
                     else:
                         self.blackKingLocation = (r, c)
     
+    def getCastleMoves(self, r, c, moves, board, whiteToMove):
+        if self.squareUnderAttack(r, c):
+            return # Can't castle while in check
+        if (self.whiteToMove and self.currentCastleRights.wks) or (not self.whiteToMove and self.currentCastleRights.bks):
+            self.getKingsideCastleMoves(r, c, moves, board, whiteToMove)
+        if (self.whiteToMove and self.currentCastleRights.wqs) or (not self.whiteToMove and self.currentCastleRights.bqs):
+            self.getQueensideCastleMoves(r, c, moves, board, whiteToMove)
     
+    def getKingsideCastleMoves(self, r, c, moves, board, whiteToMove):
+        if board[r][c+1] == "--" and board[r][c+2] == "--":
+            if not self.squareUnderAttack(r, c+1) and not self.squareUnderAttack(r, c+2):
+                moves.append(Move((r, c), (r, c+2), board, isCastleMove=True))
+    
+    def getQueensideCastleMoves(self, r, c, moves, board, whiteToMove):
+        if board[r][c-1] == "--" and board[r][c-2] == "--" and board[r][c-3] == "--":
+            if not self.squareUnderAttack(r, c-1) and not self.squareUnderAttack(r, c-2):
+                moves.append(Move((r, c), (r, c-2), board, isCastleMove=True))
+                
+    
+class CastleRights:
+    def __init__(self, wks, bks, wqs, bqs):
+        self.wks, self.bks, self.wqs, self.bqs = wks, bks, wqs, bqs 
+
 class Move():
     # Maps keys to values
     # key : value
@@ -175,7 +197,7 @@ class Move():
     filesToCols = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7}
     colsToFiles = {v: k for k, v in filesToCols.items()}
     
-    def __init__(self, startSq, endSq, board, isEnpassantMove=False):
+    def __init__(self, startSq, endSq, board, isEnpassantMove=False, isCastleMove=False):
         self.startRow = startSq[0]
         self.startCol = startSq[1]
         self.endRow = endSq[0]
@@ -186,6 +208,8 @@ class Move():
         self.isEnpassantMove = isEnpassantMove
         if self.isEnpassantMove:
             self.pieceCaptured = "wp" if self.pieceMoved == "bp" else "bp"
+        # Castle move
+        self.isCastleMove = isCastleMove
         self.moveID = self.startRow * 1000 + self.startCol * 100 + self.endRow * 10 + self.endCol
         
     def __eq__(self, other):
