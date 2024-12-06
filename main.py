@@ -72,10 +72,10 @@ def main():
         drawGameState(screen, gs, sqSelected, selectedPieceMoves, capturedPieces)
         
         if gs.checkmate:
-            showEndGameMessage(screen, "Checkmate")
+            showEndGameMessage(screen, "Checkmate", "Black" if gs.whiteToMove else "White")
             running = False
         elif gs.stalemate:
-            showEndGameMessage(screen, "Stalemate")
+            showEndGameMessage(screen, "Stalemate", None)
             running = False
 
         clock.tick(MAX_FPS)
@@ -94,7 +94,7 @@ def drawBoard(screen, gs, sqSelected, selectedPieceMoves):
                 color = moveColor
             else:
                 color = colors[((r + c) % 2)]
-            # ----------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------
             # Check Color
             if gs.inCheck and ((gs.whiteToMove and (r, c) == gs.whiteKingLocation) or 
                                (not gs.whiteToMove and (r, c) == gs.blackKingLocation)):
@@ -113,7 +113,7 @@ def drawBoard(screen, gs, sqSelected, selectedPieceMoves):
             elif not gs.checkmate:
                 if hasattr(gs, 'checkmateSoundPlayed'):
                     del gs.checkmateSoundPlayed
-            # ----------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------
             p.draw.rect(screen, color, p.Rect(c * SQ_SIZE, r * SQ_SIZE, SQ_SIZE, SQ_SIZE))
 
 def drawPieces(screen, board):
@@ -154,13 +154,41 @@ def drawGameState(screen, gs, sqSelected, selectedPieceMoves, capturedPieces):
     drawPieces(screen, gs.board)
     drawSidebar(screen, gs, capturedPieces)
 
-def showEndGameMessage(screen, message):
+def showEndGameMessage(screen, message, winner):
     font = p.font.SysFont("Helvetica", 32, True, False)
+    if winner:
+        message = f"{winner} wins by {message}"
     textObject = font.render(message, 0, p.Color("Black"))
     textLocation = p.Rect(0, 0, WIDTH, HEIGHT).move(WIDTH // 2 - textObject.get_width() // 2, HEIGHT // 2 - textObject.get_height() // 2)
     screen.blit(textObject, textLocation)
+    
+    # Draw buttons
+    playAgainButton = p.Rect(WIDTH // 2 - 100, HEIGHT // 2 + 50, 200, 50)
+    quitButton = p.Rect(WIDTH // 2 - 100, HEIGHT // 2 + 120, 200, 50)
+    p.draw.rect(screen, p.Color("green"), playAgainButton)
+    p.draw.rect(screen, p.Color("red"), quitButton)
+    
+    playAgainText = font.render("Play Again", 0, p.Color("Black"))
+    quitText = font.render("Quit", 0, p.Color("Black"))
+    screen.blit(playAgainText, playAgainButton.move(50, 10))
+    screen.blit(quitText, quitButton.move(75, 10))
+    
     p.display.flip()
-    p.time.wait(3000)
+    
+    waiting = True
+    while waiting:
+        for e in p.event.get():
+            if e.type == p.QUIT:
+                p.quit()
+                exit()
+            elif e.type == p.MOUSEBUTTONDOWN:
+                location = p.mouse.get_pos()
+                if playAgainButton.collidepoint(location):
+                    main()
+                    waiting = False
+                elif quitButton.collidepoint(location):
+                    p.quit()
+                    exit()
 
 if __name__ == "__main__":
     main()
