@@ -13,6 +13,17 @@ class GameState(MoveGenerator):
             ["--", "--", "--", "--", "--", "--", "--", "--"],
             ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
             ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]]
+
+        self.board = [
+            ["--", "--", "--", "bN", "bK", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "wN", "wK", "--", "--", "--"]
+        ]
         
         self.moveFunctions = {"p": self.getPawnMoves, "R": self.getRookMoves, "N": self.getKnightMoves,
                               "B": self.getBishopMoves, "Q": self.getQueenMoves, "K": self.getKingMoves}
@@ -26,8 +37,10 @@ class GameState(MoveGenerator):
         self.currentCastleRights = CastleRights(True, True, True, True)
         self.castleRightsLog = [CastleRights(self.currentCastleRights.wks, self.currentCastleRights.bks,
                                              self.currentCastleRights.wqs, self.currentCastleRights.bqs)]
+        self.fiftyMoveCounter = 0
+        self.positionLog = {}
 
-    def makeMove(self, move):
+    def makeMove(self, move, choice='Q'):
         self.board[move.startRow][move.startCol] = "--"
         self.board[move.endRow][move.endCol] = move.pieceMoved
         self.moveLog.append(move)
@@ -38,7 +51,17 @@ class GameState(MoveGenerator):
             self.blackKingLocation = (move.endRow, move.endCol)
         
         if move.isPawnPromotion:
-            self.board[move.endRow][move.endCol] = move.pieceMoved[0] + 'Q'
+            promote = ''
+            if choice == 'B':
+                promote = move.pieceMoved[0] + 'B'
+            elif choice == 'N':
+                promote = move.pieceMoved[0] + 'N'
+            elif choice == 'R':
+                promote = move.pieceMoved[0] + 'R'
+            else:
+                promote = move.pieceMoved[0] + 'Q'
+            
+            self.board[move.endRow][move.endCol] = promote
             
         if move.isEnpassantMove:
             self.board[move.startRow][move.endCol] = "--" # Capturing the pawn
@@ -61,6 +84,19 @@ class GameState(MoveGenerator):
         self.updateCastleRights(move)
         self.castleRightsLog.append(CastleRights(self.currentCastleRights.wks, self.currentCastleRights.bks,
                                                  self.currentCastleRights.wqs, self.currentCastleRights.bqs))
+
+        # Update fifty-move rule counter
+        if move.pieceCaptured == "--" and move.pieceMoved[1] != 'p':
+            self.fiftyMoveCounter += 1
+        else:
+            self.fiftyMoveCounter = 0
+
+        # Update position log for threefold repetition
+        board_tuple = tuple(tuple(row) for row in self.board)
+        if board_tuple in self.positionLog:
+            self.positionLog[board_tuple] += 1
+        else:
+            self.positionLog[board_tuple] = 1
 
     def undoMove(self):
         if len(self.moveLog) != 0:
@@ -93,6 +129,17 @@ class GameState(MoveGenerator):
                     self.board[move.endRow][move.endCol-2] = self.board[move.endRow][move.endCol+1]
                     self.board[move.endRow][move.endCol+1] = '--'
             self.checkmate, self.stalemate = False, False
+
+            # Update fifty-move rule counter
+            if move.pieceCaptured == "--" and move.pieceMoved[1] != 'p':
+                self.fiftyMoveCounter -= 1
+            else:
+                self.fiftyMoveCounter = 0
+
+            # Update position log for threefold repetition
+            board_tuple = tuple(tuple(row) for row in self.board)
+            if board_tuple in self.positionLog:
+                self.positionLog[board_tuple] -= 1
 
     def updateCastleRights(self, move):
         if move.pieceMoved == 'wK':
@@ -162,6 +209,20 @@ class GameState(MoveGenerator):
         
         self.enpassantPossible = tempEnpassantPossible
         self.currentCastleRights = tempCastleRights 
+
+        # Check for fifty-move rule
+        if self.fiftyMoveCounter >= 50:
+            self.stalemate = True
+
+        # Check for threefold repetition
+        board_tuple = tuple(tuple(row) for row in self.board)
+        if self.positionLog.get(board_tuple, 0) >= 3:
+            self.stalemate = True
+
+        # Check for insufficient material
+        if self.insufficientMaterial():
+            self.stalemate = True
+
         return moves
 
     def getAllPossibleMoves(self):
@@ -242,4 +303,15 @@ class GameState(MoveGenerator):
         for move in opponent_moves:
             if move.endRow == row and move.endCol == col:
                 return True
+        return False
+
+    def insufficientMaterial(self):
+        """Check for insufficient material to checkmate"""
+        pieces = [piece for row in self.board for piece in row if piece != "--"]
+        if len(pieces) == 2:
+            return True  # Only kings left
+        if len(pieces) == 3:
+            if pieces.count("wK") == 1 and pieces.count("bK") == 1:
+                if pieces.count("wB") == 1 or pieces.count("wN") == 1 or pieces.count("bB") == 1 or pieces.count("bN") == 1:
+                    return True  # One side has only king and bishop/knight
         return False
