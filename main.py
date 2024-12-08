@@ -30,7 +30,7 @@ def main():
     playerClicks = [] # Keep track of player clicks (two tuples: [(6, 4), (4, 4)])
     selectedPieceMoves = [] # Store valid moves for the selected piece
     capturedPieces = {"w": [], "b": []} # Store captured pieces
-    playerOne = False # If a human is playing white, then this will be True. If an AI is playing, then this will be False
+    playerOne = True # If a human is playing white, then this will be True. If an AI is playing, then this will be False
     playerTwo = False # Same as above but for black
     while running:
         humanTurn = (gs.whiteToMove and playerOne) or (not gs.whiteToMove and playerTwo)
@@ -68,9 +68,17 @@ def main():
                 if e.key == p.K_z:
                     gs.undoMove()
                     moveMade = True
+                if e.key == p.K_r:
+                    gs = GameState()
+                    validMoves = gs.getValidMoves()
+                    sqSelected = ()
+                    playerClicks = []
+                    selectedPieceMoves = []
+                    capturedPieces = {"w": [], "b": []}
+                    moveMade = False
         # AI move
         if not humanTurn:
-            AIMove = computer.findBestMove(gs, validMoves)
+            AIMove = computer.findBestMoveMinMax(gs, validMoves)
             if AIMove is None:
                 AIMove = computer.findRandomMove(validMoves)
             gs.makeMove(AIMove)
