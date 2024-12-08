@@ -68,6 +68,56 @@ def findMoveMinMax(gs, validMoves, depth, whiteToMove):
                     nextMove = move
             gs.undoMove()
         return minScore
+
+def findBestMoveNegaMax(gs, validMoves):
+    global nextMove
+    nextMove = None
+    random.shuffle(validMoves)
+    negaMax(gs, validMoves, DEPTH, 1 if gs.whiteToMove else -1)
+    return nextMove
+
+def negaMax(gs, validMoves, depth, turnMultiplier):
+    global nextMove
+    if depth == 0:
+        return turnMultiplier * scoreBoard(gs)
+    maxScore = -CHECKMATE
+    for move in validMoves:
+        gs.makeMove(move)
+        nextMoves = gs.getValidMoves()
+        score = -negaMax(gs, nextMoves, depth - 1, -turnMultiplier)
+        if score > maxScore:
+            maxScore = score
+            if depth == DEPTH:
+                nextMove = move
+        gs.undoMove()
+    return maxScore
+
+def findBestMoveAlphaBeta(gs, validMoves):
+    global nextMove
+    nextMove = None
+    random.shuffle(validMoves)
+    alphaBeta(gs, validMoves, DEPTH, -CHECKMATE, CHECKMATE, 1 if gs.whiteToMove else -1)
+    return nextMove
+
+def alphaBeta(gs, validMoves, depth, alpha, beta, turnMultiplier):
+    global nextMove
+    if depth == 0:
+        return turnMultiplier * scoreBoard(gs)
+    maxScore = -CHECKMATE
+    for move in validMoves:
+        gs.makeMove(move)
+        nextMoves = gs.getValidMoves()
+        score = -alphaBeta(gs, nextMoves, depth - 1, -beta, -alpha, -turnMultiplier)
+        if score > maxScore:
+            maxScore = score
+            if depth == DEPTH:
+                nextMove = move
+        gs.undoMove()
+        alpha = max(alpha, maxScore)
+        if alpha >= beta:
+            break
+    return maxScore
+
 def scoreBoard(gs):
     if gs.checkmate:
         if gs.whiteToMove:

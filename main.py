@@ -78,7 +78,7 @@ def main():
                     moveMade = False
         # AI move
         if not humanTurn:
-            AIMove = computer.findBestMoveMinMax(gs, validMoves)
+            AIMove = computer.findBestMoveAlphaBeta(gs, validMoves)
             if AIMove is None:
                 AIMove = computer.findRandomMove(validMoves)
             gs.makeMove(AIMove)
