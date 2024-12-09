@@ -43,7 +43,7 @@ class GameState(MoveGenerator):
     def makeMove(self, move, choice='Q'):
         self.board[move.startRow][move.startCol] = "--"
         self.board[move.endRow][move.endCol] = move.pieceMoved
-        self.moveLog.append(move)
+        self.moveLog.append((move, self.enpassantPossible))
         self.whiteToMove = not self.whiteToMove
         if move.pieceMoved == "wK":
             self.whiteKingLocation = (move.endRow, move.endCol)
@@ -100,7 +100,7 @@ class GameState(MoveGenerator):
 
     def undoMove(self):
         if len(self.moveLog) != 0:
-            move = self.moveLog.pop()
+            move, self.enpassantPossible = self.moveLog.pop()
             self.board[move.startRow][move.startCol] = move.pieceMoved
             self.board[move.endRow][move.endCol] = move.pieceCaptured
             self.whiteToMove = not self.whiteToMove
