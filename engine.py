@@ -1,7 +1,7 @@
 from moves import MoveGenerator, Move, CastleRights
 
 class GameState(MoveGenerator):
-    
+
     def __init__(self):
         super().__init__()
         self.board = [
@@ -22,7 +22,7 @@ class GameState(MoveGenerator):
         #     ["--", "--", "--", "--", "--", "--", "--", "--"],
         #     ["--", "--", "--", "--", "--", "--", "--", "--"],
         #     ["--", "--", "--", "--", "--", "--", "--", "--"],
-        #     ["--", "--", "--", "wN", "wK", "--", "--", "--"]
+        #     ["--", "--", "--", "--", "wK", "--", "--", "--"]
         # ]
         
         self.moveFunctions = {"p": self.getPawnMoves, "R": self.getRookMoves, "N": self.getKnightMoves,
@@ -180,13 +180,13 @@ class GameState(MoveGenerator):
                 check_row, check_column = check[0], check[1]
                 piece_checking = self.board[check_row][check_column]  # Enemy piece causing check
                 valid_squares = []
-                if piece_checking[1] == 'N':
+                if piece_checking[1] == 'N':# If knight, must capture knight or move king
                     valid_squares = [(check_row, check_column)]
-                else:
+                else:# If rook, bishop, or queen, block check or move king
                     for i in range(1, len(self.board)):
                         valid_square = (king_row + check[2] * i, king_column + check[3] * i)  # 2 & 3 = check directions
                         valid_squares.append(valid_square)
-                        if valid_square[0] == check_row and valid_square[1] == check_column:
+                        if valid_square[0] == check_row and valid_square[1] == check_column:# Once you reach piece and check
                             break
                 for i in range(len(moves) - 1, -1, -1):  # Gets rid of move not blocking, checking, or moving king
                     if moves[i].pieceMoved[1] != 'K':
@@ -235,7 +235,7 @@ class GameState(MoveGenerator):
                     piece = self.board[row][column][1]
                     self.moveFunctions[piece](row, column, moves, self.board, self.whiteToMove)  # Calls move function based on piece type
         return moves
-    
+
     def checkForPinsAndChecks(self):
         """Returns if the player is in check, a list of pins, and a list of checks"""
         pins = []
@@ -243,12 +243,10 @@ class GameState(MoveGenerator):
         inCheck = False
 
         if self.whiteToMove:
-            opponent = 'b'
-            ally = 'w'
+            opponent, ally = 'b', 'w'
             startRow, startCol = self.whiteKingLocation
         else:
-            opponent = 'w'
-            ally = 'b'
+            opponent, ally = 'w', 'b'
             startRow, startCol = self.blackKingLocation
 
         directions = ((-1, 0), (0, -1), (1, 0), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1))
@@ -283,6 +281,7 @@ class GameState(MoveGenerator):
                 else:  # Off board
                     break
 
+        # Check for knight checks cause they are a bit different
         knightMoves = ((-2, -1), (-2, 1), (-1, -2), (-1, 2), (1, -2), (1, 2), (2, -1), (2, 1))
         for move in knightMoves:
             endRow = startRow + move[0]
@@ -294,7 +293,7 @@ class GameState(MoveGenerator):
                     checks.append((endRow, endCol, move[0], move[1]))
 
         return inCheck, pins, checks
-    
+
     def squareUnderAttack(self, row, col):
         """Determine if a square is under attack by any of the opponent's pieces"""
         self.whiteToMove = not self.whiteToMove  # Switch to opponent's turn
