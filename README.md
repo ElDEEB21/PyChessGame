@@ -59,4 +59,4 @@ python main.py
 - **Improve GUI**: Enhance the graphical interface with better visuals and animations.
 - **Sound Customization**: Allow users to customize sound effects and add their own.
 
-Enjoy playing PyChessGame!
+Enjoy playing PyChessGame! 
