@@ -8,8 +8,10 @@ DEPTH = 0
 def findRandomMove(validMoves):
     return random.choice(validMoves)
 
-def findBestMoveAlphaBeta(gs, validMoves, AIDepth=DEPTH):
+def findBestMoveAlphaBeta(gs, validMoves, AIDepth=0):
     global nextMove
+    global DEPTH
+    DEPTH= AIDepth
     nextMove = None
     random.shuffle(validMoves)
     alphaBeta(gs, validMoves, AIDepth, -CHECKMATE, CHECKMATE, 1 if gs.whiteToMove else -1)
@@ -17,6 +19,7 @@ def findBestMoveAlphaBeta(gs, validMoves, AIDepth=DEPTH):
 
 def alphaBeta(gs, validMoves, depth, alpha, beta, turnMultiplier):
     global nextMove
+    global DEPTH
     if depth == 0:
         return scoreBoard(gs)
     if turnMultiplier == 1:
