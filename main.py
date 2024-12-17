@@ -32,6 +32,10 @@ class ChessGame:
 
     def initializeGame(self):
         p.init()
+        # Load and play background music
+        if not isMuted:
+            p.mixer.music.load('sounds/strategist.mp3')
+            p.mixer.music.play(-1)  # Play the music in a loop
         p.display.set_caption("Chess Game")
         self.screen = p.display.set_mode((WIDTH, HEIGHT))
         self.clock = p.time.Clock()
@@ -271,7 +275,7 @@ class ChessGame:
         p.draw.rect(self.screen, p.Color("#464646"), sidebarRect)
 
         # Set up font
-        font = p.font.SysFont("Helvetica", 24, True, False)
+        font = p.font.SysFont("Corbel", 24, True, False)
 
         # Display whose turn it is using color
         turnColor = p.Color("white") if self.gs.whiteToMove else p.Color("black")
@@ -603,6 +607,8 @@ class ChessGame:
                         self.mainLoop()
                         waiting = False
                     elif mainMenuButton.collidepoint(mouse):
+                        p.quit()
+                        self.resetGame()
                         self.initializeGame()
                         self.mainLoop()
                         waiting = False
