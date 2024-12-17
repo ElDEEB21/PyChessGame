@@ -14,17 +14,6 @@ class GameState(MoveGenerator):
             ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
             ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]]
 
-        # self.board = [
-        #     ["--", "--", "--", "bN", "bK", "--", "--", "--"],
-        #     ["--", "--", "--", "--", "--", "--", "--", "--"],
-        #     ["--", "--", "--", "--", "--", "--", "--", "--"],
-        #     ["--", "--", "--", "--", "--", "--", "--", "--"],
-        #     ["--", "--", "--", "--", "--", "--", "--", "--"],
-        #     ["--", "--", "--", "--", "--", "--", "--", "--"],
-        #     ["--", "--", "--", "--", "--", "--", "--", "--"],
-        #     ["--", "--", "--", "--", "wK", "--", "--", "--"]
-        # ]
-        
         self.moveFunctions = {"p": self.getPawnMoves, "R": self.getRookMoves, "N": self.getKnightMoves,
                               "B": self.getBishopMoves, "Q": self.getQueenMoves, "K": self.getKingMoves}
         self.whiteToMove = True
@@ -38,7 +27,6 @@ class GameState(MoveGenerator):
         self.castleRightsLog = [CastleRights(self.currentCastleRights.wks, self.currentCastleRights.bks,
                                              self.currentCastleRights.wqs, self.currentCastleRights.bqs)]
         self.fiftyMoveCounter = 0
-        self.positionLog = {}
 
     def makeMove(self, move, choice='Q'):
         self.board[move.startRow][move.startCol] = "--"
@@ -91,13 +79,6 @@ class GameState(MoveGenerator):
         else:
             self.fiftyMoveCounter = 0
 
-        # Update position log for threefold repetition
-        board_tuple = tuple(tuple(row) for row in self.board)
-        if board_tuple in self.positionLog:
-            self.positionLog[board_tuple] += 1
-        else:
-            self.positionLog[board_tuple] = 1
-
     def undoMove(self):
         if len(self.moveLog) != 0:
             move, self.enpassantPossible = self.moveLog.pop()
@@ -135,11 +116,6 @@ class GameState(MoveGenerator):
                 self.fiftyMoveCounter -= 1
             else:
                 self.fiftyMoveCounter = 0
-
-            # Update position log for threefold repetition
-            board_tuple = tuple(tuple(row) for row in self.board)
-            if board_tuple in self.positionLog:
-                self.positionLog[board_tuple] -= 1
 
     def updateCastleRights(self, move):
         if move.pieceMoved == 'wK':
@@ -212,11 +188,6 @@ class GameState(MoveGenerator):
 
         # Check for fifty-move rule
         if self.fiftyMoveCounter >= 50:
-            self.stalemate = True
-
-        # Check for threefold repetition
-        board_tuple = tuple(tuple(row) for row in self.board)
-        if self.positionLog.get(board_tuple, 0) >= 3:
             self.stalemate = True
 
         # Check for insufficient material
