@@ -10,6 +10,7 @@ SQ_SIZE = HEIGHT // DIMENSION
 MAX_FPS = 15  # For animations later on
 IMAGES = {}
 
+
 class ChessGame:
     def __init__(self):
         self.screen = None
@@ -56,7 +57,8 @@ class ChessGame:
                 self.moveMade = False
             self.drawGameState()
             if self.gs.checkmate or self.gs.stalemate:
-                self.showEndGameMessage("Checkmate" if self.gs.checkmate else "Stalemate", "Black" if self.gs.whiteToMove else "White")
+                self.showEndGameMessage("Checkmate" if self.gs.checkmate else "Stalemate",
+                                        "Black" if self.gs.whiteToMove else "White")
                 running = False
             self.clock.tick(MAX_FPS)
             p.display.flip()
@@ -72,7 +74,8 @@ class ChessGame:
             else:
                 self.sqSelected = (row, col)
                 self.playerClicks.append(self.sqSelected)  # Append for both 1st and 2nd clicks
-                self.selectedPieceMoves = [move for move in self.validMoves if move.startRow == row and move.startCol == col]
+                self.selectedPieceMoves = [move for move in self.validMoves if
+                                           move.startRow == row and move.startCol == col]
             if len(self.playerClicks) == 2:  # After the 2nd click
                 move = Move(self.playerClicks[0], self.playerClicks[1], self.gs.board)
                 print(move.getChessNotation())
@@ -137,13 +140,14 @@ class ChessGame:
             for c in range(DIMENSION):
                 if self.sqSelected == (r, c):  # Check if this square is selected
                     color = selectedColor
-                elif (r, c) in [(move.endRow, move.endCol) for move in self.selectedPieceMoves]:  # Check if this square is a valid move
+                elif (r, c) in [(move.endRow, move.endCol) for move in
+                                self.selectedPieceMoves]:  # Check if this square is a valid move
                     color = moveColor
                 else:
                     color = colors[((r + c) % 2)]
                 p.draw.rect(self.screen, color, p.Rect(c * SQ_SIZE, r * SQ_SIZE, SQ_SIZE, SQ_SIZE))
                 # Check Color
-                if self.gs.inCheck and ((self.gs.whiteToMove and (r, c) == self.gs.whiteKingLocation) or 
+                if self.gs.inCheck and ((self.gs.whiteToMove and (r, c) == self.gs.whiteKingLocation) or
                                         (not self.gs.whiteToMove and (r, c) == self.gs.blackKingLocation)):
                     color = checkColor
                 # Check Sound
@@ -173,15 +177,15 @@ class ChessGame:
         # Draw the sidebar background
         sidebarRect = p.Rect(WIDTH, 0, SIDEBAR_WIDTH, HEIGHT)
         p.draw.rect(self.screen, p.Color("gray"), sidebarRect)
-        
+
         # Set up font
         font = p.font.SysFont("Helvetica", 24, True, False)
-        
+
         # Display whose turn it is using color
         turnColor = p.Color("white") if self.gs.whiteToMove else p.Color("black")
         turnRect = p.Rect(WIDTH + 10, 10, 30, 30)
         p.draw.rect(self.screen, turnColor, turnRect)
-        
+
         # Display captured pieces
         yOffset = 60
         pieceSize = SQ_SIZE // 2  # Smaller size for captured pieces
@@ -207,24 +211,25 @@ class ChessGame:
                 message = f"{winner} wins by checkmate!"
             else:
                 message = "It's a stalemate!"
-            
+
         textObject = font.render(message, 0, p.Color("Black"))
-        textLocation = p.Rect(0, 0, WIDTH, HEIGHT).move(WIDTH // 2 - textObject.get_width() // 2, HEIGHT // 2 - textObject.get_height() // 2)
+        textLocation = p.Rect(0, 0, WIDTH, HEIGHT).move(WIDTH // 2 - textObject.get_width() // 2,
+                                                        HEIGHT // 2 - textObject.get_height() // 2)
         self.screen.blit(textObject, textLocation)
-        
+
         # Draw buttons
         playAgainButton = p.Rect(WIDTH // 2 - 100, HEIGHT // 2 + 50, 200, 50)
         quitButton = p.Rect(WIDTH // 2 - 100, HEIGHT // 2 + 120, 200, 50)
         p.draw.rect(self.screen, p.Color("green"), playAgainButton)
         p.draw.rect(self.screen, p.Color("red"), quitButton)
-        
+
         playAgainText = font.render("Play Again", 0, p.Color("Black"))
         quitText = font.render("Quit", 0, p.Color("Black"))
         self.screen.blit(playAgainText, playAgainButton.move(50, 10))
         self.screen.blit(quitText, quitButton.move(75, 10))
-        
+
         p.display.flip()
-        
+
         waiting = True
         while waiting:
             for e in p.event.get():
@@ -244,23 +249,24 @@ class ChessGame:
     def showStartWindow(self):
         font = p.font.SysFont("Helvetica", 32, True, False)
         self.screen.fill(p.Color("lightblue"))
-        
+
         titleText = font.render("Choose Game Mode", 0, p.Color("Black"))
-        titleLocation = p.Rect(0, 0, WIDTH, HEIGHT).move(WIDTH // 2 - titleText.get_width() // 2, HEIGHT // 4 - titleText.get_height() // 2)
+        titleLocation = p.Rect(0, 0, WIDTH, HEIGHT).move(WIDTH // 2 - titleText.get_width() // 2,
+                                                         HEIGHT // 4 - titleText.get_height() // 2)
         self.screen.blit(titleText, titleLocation)
-        
+
         vsPlayerButton = p.Rect(WIDTH // 2 - 100, HEIGHT // 2 - 50, 200, 50)
         vsComputerButton = p.Rect(WIDTH // 2 - 100, HEIGHT // 2 + 20, 200, 50)
         p.draw.rect(self.screen, p.Color("blue"), vsPlayerButton, border_radius=10)
         p.draw.rect(self.screen, p.Color("blue"), vsComputerButton, border_radius=10)
-        
+
         vsPlayerText = font.render("Player vs Player", 0, p.Color("white"))
         vsComputerText = font.render("Player vs Computer", 0, p.Color("white"))
         self.screen.blit(vsPlayerText, vsPlayerButton.move(20, 10))
         self.screen.blit(vsComputerText, vsComputerButton.move(10, 10))
-        
+
         p.display.flip()
-        
+
         waiting = True
         while waiting:
             for e in p.event.get():
@@ -277,23 +283,24 @@ class ChessGame:
     def showColorChoiceWindow(self):
         font = p.font.SysFont("Helvetica", 32, True, False)
         self.screen.fill(p.Color("lightgreen"))
-        
+
         titleText = font.render("Choose Your Color", 0, p.Color("Black"))
-        titleLocation = p.Rect(0, 0, WIDTH, HEIGHT).move(WIDTH // 2 - titleText.get_width() // 2, HEIGHT // 4 - titleText.get_height() // 2)
+        titleLocation = p.Rect(0, 0, WIDTH, HEIGHT).move(WIDTH // 2 - titleText.get_width() // 2,
+                                                         HEIGHT // 4 - titleText.get_height() // 2)
         self.screen.blit(titleText, titleLocation)
-        
+
         whiteButton = p.Rect(WIDTH // 2 - 100, HEIGHT // 2 - 50, 200, 50)
         blackButton = p.Rect(WIDTH // 2 - 100, HEIGHT // 2 + 20, 200, 50)
         p.draw.rect(self.screen, p.Color("white"), whiteButton, border_radius=10)
         p.draw.rect(self.screen, p.Color("black"), blackButton, border_radius=10)
-        
+
         whiteText = font.render("White", 0, p.Color("Black"))
         blackText = font.render("Black", 0, p.Color("White"))
         self.screen.blit(whiteText, whiteButton.move(60, 10))
         self.screen.blit(blackText, blackButton.move(60, 10))
-        
+
         p.display.flip()
-        
+
         waiting = True
         while waiting:
             for e in p.event.get():
@@ -311,10 +318,10 @@ class ChessGame:
         font = p.font.SysFont("Helvetica", 24, True, False)
         promotionRect = p.Rect(WIDTH + 10, HEIGHT // 2 - 100, 180, 200)
         p.draw.rect(self.screen, p.Color("lightyellow"), promotionRect)
-        
+
         titleText = font.render("Promote to:", 0, p.Color("Black"))
         self.screen.blit(titleText, promotionRect.move(10, 10))
-        
+
         pieces = ["Q", "R", "N", "B"]
         pieceImages = ["wQ", "wR", "wN", "wB"] if isWhite else ["bQ", "bR", "bN", "bB"]
         buttons = []
@@ -326,9 +333,9 @@ class ChessGame:
             pieceText = font.render(piece, 0, p.Color("white"))
             self.screen.blit(pieceText, button.move(50, 0))
             buttons.append((button, piece))
-        
+
         p.display.flip()
-        
+
         waiting = True
         while waiting:
             for e in p.event.get():
@@ -340,6 +347,7 @@ class ChessGame:
                     for button, piece in buttons:
                         if button.collidepoint(location):
                             return piece
+
 
 if __name__ == "__main__":
     game = ChessGame()
