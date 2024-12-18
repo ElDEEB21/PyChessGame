@@ -35,7 +35,8 @@ class ChessGame:
         # Load and play background music
         if not isMuted:
             p.mixer.music.load('sounds/strategist.mp3')
-            p.mixer.music.play(-1)  # Play the music in a loop
+            p.mixer.music.set_volume(0.3)  
+            p.mixer.music.play(-1) 
         p.display.set_caption("Chess Game")
         self.screen = p.display.set_mode((WIDTH, HEIGHT))
         self.clock = p.time.Clock()
